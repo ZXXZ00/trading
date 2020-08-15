@@ -3,38 +3,64 @@ var times; // times is an array of time
 var data;  // data is an array [ {field: ..., data: [...]}, {...} ...]
 
 var legendClickHandler = function(e, legendItem) {
-	var index = legendItem.datasetIndex;
-	var ci = this.chart;
-	var meta = ci.getDatasetMeta(index);
+	let index = legendItem.datasetIndex;
+	let ci = this.chart;
+	let meta = ci.getDatasetMeta(index);
 	meta.hidden = meta.hidden === null ?
 		!ci.data.datasets[index].hidden : null;
 	ci.options.scales.yAxes[index].display =
 		!ci.options.scales.yAxes[index].display;
+	console.log(ci.options.scales.yAxes);
 	ci.update();
+}
+
+function getData() {
+	var form = document.getElementById('frm');
+	var link = "http://127.0.0.1:5000/data?symbol="+form['symbol'].value+
+		"&strike_price="+form['strike'].value+
+		"&expiration_date="+form['exp_date'].value+
+		"&type="+form['type'].value;
+	var request = new XMLHttpRequest();
+	request.open("GET", link)
+	request.send();
+	request.onload = function(e) {
+		if (request.status == 200) {
+			response = JSON.parse(request.response);
+			times = response['time'];
+			data = response['data'];
+			console.log(data);
+			draw();
+		} else {
+			alert('error');
+			return;
+		}
+	}
 }
 
 function draw() {
 	var datasets = [];
 	var y = [];
 	data.forEach((entry) => {
-		var color = 'rgb('+
+		let color = 'rgb('+
 			Math.floor(Math.random()*256)+','+
 			Math.floor(Math.random()*256)+','+
 			Math.floor(Math.random()*256);
-		var element = {
+		let element = {
 			label: entry.field,
-			yAixsID: entry.field,
+			yAxisID: entry.field,
 			borderColor: color+')',
-			backgroundColor: color+',0)'
+			backgroundColor: color+',0)',
 			data: entry.data,
-			type: 'line'
+			type: 'line',
+			hidden: true
 		};
-		var yElement = {
+		let yElement = {
 			id: entry.field,
 			type: 'linear',
+			display: false,
 			position: Math.random() < 0.5 ? 'left' : 'right',
 			ticks: {
-				fontColor: color+',0)'
+				fontColor: color+')'
 			}
 		}
 		datasets.push(element);
@@ -55,6 +81,9 @@ function drawHelper(datas, y) {
 			scales: {
 				xAxes: [{
 					type: 'time',
+					time: {
+						unit: 'minute'
+					},
 					bounds: 'ticks',
 					ticks: {
 						source: 'labels'
@@ -63,10 +92,10 @@ function drawHelper(datas, y) {
 				yAxes: y
 			},
 			legend: {
-				onclick: legendClickHandler
+				onClick: legendClickHandler
 			}
 		}
-	}
+	})
 }
 
 
