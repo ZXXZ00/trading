@@ -1,6 +1,10 @@
 var chart;
-var times; // times is an array of time
+var times = []; // times is an array of time
 var data;  // data is an array [ {field: ..., data: [...]}, {...} ...]
+var scale = 0; // the length of displayed part of time labels
+var len = 0; // the total length of labels
+var left = []; // labels that are zoomed out
+var right = []; // or moved out of sight
 
 var legendClickHandler = function(e, legendItem) {
 	let index = legendItem.datasetIndex;
@@ -10,7 +14,6 @@ var legendClickHandler = function(e, legendItem) {
 		!ci.data.datasets[index].hidden : null;
 	ci.options.scales.yAxes[index].display =
 		!ci.options.scales.yAxes[index].display;
-	console.log(ci.options.scales.yAxes);
 	ci.update();
 }
 
@@ -28,7 +31,9 @@ function getData() {
 			response = JSON.parse(request.response);
 			times = response['time'];
 			data = response['data'];
-			console.log(data);
+			left = []; right = [];
+			scale = times.length;
+			len = scale;
 			draw();
 		} else {
 			alert('error');
@@ -98,4 +103,78 @@ function drawHelper(datas, y) {
 	})
 }
 
+var isLeft = true;
+function zoom(e) {
+	if (scale == 0) { return; } // the graph is not drawn yet
+	e.preventDefault();
+	let prev = scale;
+	scale += Math.round(e.deltaY * 0.01 * times.length);
+	scale = Math.max(Math.min(len, scale), 2);
+	let diff = scale - prev;
+	//console.log(prev, scale, diff);
+	while (times.length > 2 && diff < 0) {
+		if (isLeft) {
+			left.push(times.shift());
+		} else {
+			right.unshift(times.pop());
+		}
+		++diff;
+		isLeft = !isLeft;
+	}
+	while (diff > 0) {
+		if (right.length > 0 && isLeft) {
+			times.push(right.shift());
+		} else if (left.length > 0)  {
+			times.unshift(left.pop());
+		}
+		isLeft = !isLeft;
+		--diff;
+	}
+	chart.update(0.2);
+}
 
+var isMouseDown = false;
+var prevX = 0;
+var prevT = 0;
+function mouseDown(e) {
+	return;
+	isMouseDown = true;
+	prevX = e.clientX;
+	prevT = Date.now();
+}
+function mouseUp() {
+	isMouseDown = false;
+}
+function mouseMove(e) {
+	if (isMouseDown) {
+		let currX = e.clientX;
+		let dx = currX - prevX;
+		let t = Date.now();
+		let dt = t - prevT;
+		let v = Math.round(dx/dt*5);
+		prevX = currX;
+		prevT = t;
+		if (v != 0) {
+			console.log(left, times, right);
+			console.log(v);
+		}
+		while (right.length > 0 && v < 0) {
+			times.push(right.shift());
+			left.push(times.shift());
+			++v;
+		}
+		while (left.length > 0 && v > 0) {
+			times.unshift(left.pop());
+			right.unshift(times.pop());
+			--v;
+		}
+		if (v != 0) { console.log(left, times, right); }
+		chart.update(1);
+	}
+}
+
+var tmp = [];
+function resetZoom() {
+	tmp.push(times.pop());
+	chart.update();
+}
