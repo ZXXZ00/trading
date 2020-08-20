@@ -1,6 +1,6 @@
-var chart;
+var chart = null;
 var times = []; // times is an array of time
-var data;  // data is an array [ {field: ..., data: [...]}, {...} ...]
+var data;  // data is an array [ {field: ..., data: [{...}]}, {...} ...]
 var scale = 0; // the length of displayed part of time labels
 var len = 0; // the total length of labels
 var left = []; // labels that are zoomed out
@@ -10,6 +10,7 @@ var legendClickHandler = function(e, legendItem) {
 	let index = legendItem.datasetIndex;
 	let ci = this.chart;
 	let meta = ci.getDatasetMeta(index);
+	console.log(index);
 	meta.hidden = meta.hidden === null ?
 		!ci.data.datasets[index].hidden : null;
 	ci.options.scales.yAxes[index].display =
@@ -18,6 +19,7 @@ var legendClickHandler = function(e, legendItem) {
 }
 
 function getData() {
+	chart=null; times=[]; data=[]; left=[]; right=[]; scale=0; len=0;
 	var form = document.getElementById('frm');
 	var link = "http://127.0.0.1:5000/data?symbol="+form['symbol'].value+
 		"&strike_price="+form['strike'].value+
@@ -46,6 +48,7 @@ function draw() {
 	var datasets = [];
 	var y = [];
 	data.forEach((entry) => {
+		console.log(entry.data);
 		let color = 'rgb('+
 			Math.floor(Math.random()*256)+','+
 			Math.floor(Math.random()*256)+','+
@@ -113,6 +116,7 @@ function zoom(e) {
 	let diff = scale - prev;
 	//console.log(prev, scale, diff);
 	while (times.length > 2 && diff < 0) {
+		console.log(left, times, right);
 		if (isLeft) {
 			left.push(times.shift());
 		} else {
@@ -137,7 +141,6 @@ var isMouseDown = false;
 var prevX = 0;
 var prevT = 0;
 function mouseDown(e) {
-	return;
 	isMouseDown = true;
 	prevX = e.clientX;
 	prevT = Date.now();
@@ -174,7 +177,12 @@ function mouseMove(e) {
 }
 
 var tmp = [];
+var testL = true;
 function resetZoom() {
-	tmp.push(times.pop());
+	if (testL) {
+		tmp.push(times.shift());
+	} else {
+		tmp.push(times.pop());
+	}
 	chart.update();
 }

@@ -2,8 +2,9 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
 from os.path import expanduser
+import json
 
-symbols = set(['XLK', 'XLE', 'IGM']+['TSLA', 'SNAP', 'DIS', 'BAC', 'LUV', 'WMT']+['AMZN', 'CSCO', 'NVDA', 'FB', 'F', 'AMC', 'IBM', 'WFC', 'SBUX', 'C    ', 'NFLX', 'GE', 'CVS', 'MSFT', 'AMD', 'BA', 'COST', 'XOM', 'DAL', 'CVX', 'I    NTC', 'SPY', 'UAL', 'LYFT', 'UBER', 'GOOGL', 'TWTR', 'AAL', 'JPM', 'AAPL'])
+symbols = set(['XLK', 'XLE', 'IGM']+['TSLA', 'SNAP', 'DIS', 'BAC', 'LUV', 'WMT']+['AMZN', 'CSCO', 'NVDA', 'FB', 'F', 'AMC', 'IBM', 'WFC', 'SBUX', 'C', 'NFLX', 'GE', 'CVS', 'MSFT', 'AMD', 'BA', 'COST', 'XOM', 'DAL', 'CVX', 'INTC', 'SPY', 'UAL', 'LYFT', 'UBER', 'GOOGL', 'TWTR', 'AAL', 'JPM', 'AAPL'])
 entries = ['strike_price', 'update_time', 'type', 'underlying_price', 'bid_price', 'ask_price', 'bid_size', 'ask_size', 'low_price', 'high_price', 'mark_price', 'open_interest', 'volume', 'chance_of_profit_long', 'chance_of_profit_short', 'delta', 'gamma', 'rho', 'theta', 'vega', 'implied_volatility', 'high_fill_rate_buy_price', 'high_fill_rate_sell_price', 'low_fill_rate_buy_price', 'low_fill_rate_sell_price']
 path = expanduser('~')+'/trading/data/'
 app = Flask(__name__)
@@ -53,11 +54,14 @@ def api_filter():
 		datas = c.fetchall()
 		limit = range(len(entries))
 		for data in datas:
+			update_time = None
 			for i in limit:
 				if entries[i] == 'update_time':
-					times.append(data[i])
+					update_time = data[i]
+					times.append(update_time)
 				elif not (entries[i] == 'type' or entries[i] == 'strike_price'):
-					d[entries[i]].append(data[i])
+					tmp = {'x': update_time, 'y': data[i]}
+					d[entries[i]].append(tmp)
 		conn.close()
 		l = []
 		for key, val in d.items():
@@ -66,8 +70,23 @@ def api_filter():
 		ret = {'time': times, 'data': l}
 		return ret
 
+	# To be implemented 
 	fields = request.args['fileds'].split(' ')
 
 	conn.close()
 	return str(exp_date)
+
+@app.route('/expiration_date', methods=['GET'])
+def exp_date():
+	if 'symbol' not in request.args:
+		return 'symbol required'
+	symbol = request.args['symbol']
+	if symbol not in symbols:
+		return 'symbol not found'
+	conn = sqlite3.connect(path+symbol+'.db')
+	c = conn.cursor()
+	c.execute('SELECT name FROM sqlite_master WHERE type="table"')
+	dates = sum(c.fetchall(), ())
+	return jsonify(dates)
+
 app.run()
