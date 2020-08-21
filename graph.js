@@ -10,7 +10,6 @@ var legendClickHandler = function(e, legendItem) {
 	let index = legendItem.datasetIndex;
 	let ci = this.chart;
 	let meta = ci.getDatasetMeta(index);
-	console.log(index);
 	meta.hidden = meta.hidden === null ?
 		!ci.data.datasets[index].hidden : null;
 	ci.options.scales.yAxes[index].display =
@@ -19,7 +18,10 @@ var legendClickHandler = function(e, legendItem) {
 }
 
 function getData() {
-	chart=null; times=[]; data=[]; left=[]; right=[]; scale=0; len=0;
+	if (chart != null) {
+		chart.destroy();
+	}
+	times=[]; data=[]; left=[]; right=[]; scale=0; len=0;
 	var form = document.getElementById('frm');
 	var link = "http://127.0.0.1:5000/data?symbol="+form['symbol'].value+
 		"&strike_price="+form['strike'].value+
@@ -48,7 +50,6 @@ function draw() {
 	var datasets = [];
 	var y = [];
 	data.forEach((entry) => {
-		console.log(entry.data);
 		let color = 'rgb('+
 			Math.floor(Math.random()*256)+','+
 			Math.floor(Math.random()*256)+','+
@@ -116,7 +117,6 @@ function zoom(e) {
 	let diff = scale - prev;
 	//console.log(prev, scale, diff);
 	while (times.length > 2 && diff < 0) {
-		console.log(left, times, right);
 		if (isLeft) {
 			left.push(times.shift());
 		} else {
@@ -157,10 +157,6 @@ function mouseMove(e) {
 		let v = Math.round(dx/dt*5);
 		prevX = currX;
 		prevT = t;
-		if (v != 0) {
-			console.log(left, times, right);
-			console.log(v);
-		}
 		while (right.length > 0 && v < 0) {
 			times.push(right.shift());
 			left.push(times.shift());
@@ -171,7 +167,6 @@ function mouseMove(e) {
 			right.unshift(times.pop());
 			--v;
 		}
-		if (v != 0) { console.log(left, times, right); }
 		chart.update(1);
 	}
 }
