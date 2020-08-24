@@ -6,6 +6,9 @@ var len = 0; // the total length of labels
 var left = []; // labels that are zoomed out
 var right = []; // or moved out of sight
 
+var isExpDateUpdated = false;
+var isStrikeUpdated = false;
+
 var legendClickHandler = function(e, legendItem) {
 	let index = legendItem.datasetIndex;
 	let ci = this.chart;
@@ -16,12 +19,14 @@ var legendClickHandler = function(e, legendItem) {
 		!ci.options.scales.yAxes[index].display;
 	ci.update();
 }
-
+// need to implement the removal of the child of expiration date and strike
+// so it can clear the suggestion box
 function getData() {
 	if (chart != null) {
 		chart.destroy();
 	}
 	times=[]; data=[]; left=[]; right=[]; scale=0; len=0;
+	isUpdated=false; isStrikeUpdated=false;
 	var form = document.getElementById('frm');
 	var link = "http://127.0.0.1:5000/data?symbol="+form['symbol'].value+
 		"&strike_price="+form['strike'].value+
@@ -32,7 +37,7 @@ function getData() {
 	request.send();
 	request.onload = function(e) {
 		if (request.status == 200) {
-			response = JSON.parse(request.response);
+			let response = JSON.parse(request.response);
 			times = response['time'];
 			data = response['data'];
 			left = []; right = [];
@@ -40,7 +45,7 @@ function getData() {
 			len = scale;
 			draw();
 		} else {
-			alert('error');
+			alert(request.response);
 			return;
 		}
 	}
@@ -90,6 +95,7 @@ function drawHelper(datas, y) {
 			scales: {
 				xAxes: [{
 					type: 'time',
+					distribution: 'series',
 					time: {
 						unit: 'minute'
 					},
@@ -102,6 +108,14 @@ function drawHelper(datas, y) {
 			},
 			legend: {
 				onClick: legendClickHandler
+			},
+			layout: {
+				padding: {
+					left: 10,
+					right: 10,
+					top: 0,
+					bottom: 10
+				}
 			}
 		}
 	})
@@ -171,13 +185,51 @@ function mouseMove(e) {
 	}
 }
 
-var tmp = [];
-var testL = true;
-function resetZoom() {
-	if (testL) {
-		tmp.push(times.shift());
-	} else {
-		tmp.push(times.pop());
+function getExpirationDate() {
+	console.log('date');
+	let datalist = document.getElementById('exp_d');
+	let form = document.getElementById('frm');
+	let symbol = form['symbol'].value;
+	if (symbol.length < 3 || isExpDateUpdated) { return; }
+	let request = new XMLHttpRequest();
+	request.open("GET",
+		'http://127.0.0.1:5000/expiration_date?symbol='+symbol);
+	request.send();
+	request.onload = function(e) {
+		if (request.status == 200) {
+			isExpDateUpdated = true;
+			let response = JSON.parse(request.response);
+			for (const i in response) {
+				let opt = document.createElement('option');
+				opt.appendChild(document.createTextNode(response[i]));
+				datalist.appendChild(opt);
+			}
+		}
 	}
-	chart.update();
+}
+
+function getStrikePrice() {
+	console.log('price');
+	let datalist = document.getElementById('price');
+	let form = document.getElementById('frm');
+	let symbol = form['symbol'].value;
+	let exp_date = form['exp_date'].value;
+	if (!isExpDateUpdated || isStrikeUpdated) { return; }
+	let request = new XMLHttpRequest();
+	request.open("GET",
+		'http://127.0.0.1:5000/strike_price?symbol='+symbol+
+		'&expiration_date='+exp_date);
+	request.send();
+	request.onload = function(e) {
+		if (request.status == 200) {
+			let response = JSON.parse(request.response);
+			if (response == null) { console.log('null'); return; }
+			isStrikeUpdated = true;
+			for (const i in response) {
+				let opt = document.createElement('option');
+				opt.appendChild(document.createTextNode(response[i]));
+				datalist.appendChild(opt);
+			}
+		}
+	}
 }
