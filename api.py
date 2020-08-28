@@ -99,6 +99,10 @@ def strike_p():
 		return 'symbol not found', 400
 	conn = sqlite3.connect(path+symbol+'.db')
 	c = conn.cursor()
+	c.execute('SELECT name FROM sqlite_master WHERE type="table" AND name="'+exp_date+'"')
+	if c.fetchone() == None:
+		conn.close()
+		return 'invalid expiration_date', 400
 	c.execute('SELECT strike_price FROM "'+exp_date+'" WHERE type="call"')
 	prices = set()
 	tmp = c.fetchone()

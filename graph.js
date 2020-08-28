@@ -233,3 +233,20 @@ function getStrikePrice() {
 		}
 	}
 }
+
+function removeSuggestions() {
+	let exp_date = document.getElementById('exp_d');
+	let price = document.getElementById('price');
+	exp_date_child = exp_date.firstChild;
+	price_child = price.firstChild;
+	while (exp_date_child) {
+		console.log('remove')
+		exp_date.removeChild(exp_date_child);
+		exp_date_child = exp_date.firstChild;
+	}
+	while (price_child) {
+		price.removeChild(price_child);
+		price_child = price.firstChild;
+	}
+	isExpDateUpdated = false; isStrikeUpdated = false;
+}
