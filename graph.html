@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>graph</title>
+<link href="graph.css" rel="stylesheet" type="text/css">
+</head>
+
+<body>
+	<h2>Graph</h2>
+	<form id="frm" style="inline">
+		Symbol: <input type="text" name="symbol" onchange="removeSuggestions()">
+		Expiration Date: <input type="text" name="exp_date" list="exp_d" onfocus="getExpirationDate()" onchange="removeSuggestions()">
+		<datalist id='exp_d'></datalist>
+		Strike Price <input type="text" name="strike" list='price' onfocus="getStrikePrice()">
+		<datalist id='price'></datalist>
+		Type: <input type="text" name="type">
+		<button type="button" onclick="getData()">draw</button>
+		<button type="button" style="float: right" onclick="getExpirationDate()">
+			Reset Graph
+		</button>
+	</form>
+	<br>
+	<canvas id="myChart" onmousedown="mouseDown(event)" onmouseup="mouseUp()" onmousemove="mouseMove(event)"></canvas>
+	<script src="/Users/adam/trading/moment.js"></script>
+	<script src="/Users/adam/trading/chart.js"></script>
+	<script src="/Users/adam/trading/graph.js"></script>
+	<script>Chart.defaults.scale.gridLines.display = false;</script>
+	<script>
+		document.getElementById("myChart").addEventListener("wheel", zoom);
+	</script>
+</body>
+</html>
